@@ -143,7 +143,7 @@ CCTV 조회는 비동기 방식으로 처리하고, 검색 중에는 로딩 화�
 
 | 경로 | 내용 |
 | --- | --- |
-| `ToyProjects01.slnx` | WPF 클라이언트와 API 서버를 포함한 솔루션 |
+| `CctvMonitor.slnx` | WPF 클라이언트와 API 서버를 포함한 솔루션 |
 | `WpfCctvMonitorApp/` | WPF 클라이언트 프로젝트 |
 | `WpfCctvMonitorApp/Common/` | 공통 설정 및 지역별 좌표 범위 |
 | `WpfCctvMonitorApp/Models/` | CCTV 검색 요청·응답 모델 |
@@ -195,7 +195,7 @@ CCTV 조회는 비동기 방식으로 처리하고, 검색 중에는 로딩 화�
 
 ## 실행 방법
 
-1. Visual Studio에서 `ToyProjects01.slnx`를 엽니다.
+1. Visual Studio에서 `CctvMonitor.slnx`를 엽니다.
 2. NuGet 패키지를 복원하고 솔루션을 빌드합니다.
 3. `ItsCctvBridgeApi`를 먼저 실행하고 서버를 켜둡니다.
 4. `WpfCctvMonitorApp`을 실행합니다.

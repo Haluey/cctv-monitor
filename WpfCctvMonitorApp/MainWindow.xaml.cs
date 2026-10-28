@@ -22,10 +22,13 @@ namespace WpfCctvMonitorApp
         private ItsCctvService itsCctvService;
 
         // 지역 선택한 위경도 범위 저장할 변수
-        private GeoBound selectedGeoBound;
+        private GeoBound? selectedGeoBound;
 
         // ProgressRing 창 변수
         private LoadingWindow? loadingWindow;
+
+        private bool isCloseConfirmed;
+        private bool isCloseConfirmOpen;
 
         #endregion
 
@@ -119,22 +122,30 @@ namespace WpfCctvMonitorApp
         }
 
         // 종료여부 확인
-        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            //var result = System.Windows.MessageBox.Show("종료하시겠습니까?", "종료 확인", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            //if (result == System.Windows.MessageBoxResult.No)
-            //{
-            //    e.Cancel = true;
-            //    return;
-            //}
-
-            var result = await ShowConfirmAsync("종료 확인", "종료하시겠습니까?");
-
-            if (!result)
-            {
-                e.Cancel = true;
+        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+            if (isCloseConfirmed)
                 return;
+
+            // 확인창의 응답을 받기 전에는 종료하지 않음
+            e.Cancel = true;
+
+            // 종료 버튼을 여러 번 눌러도 확인창은 하나만 표시
+            if (isCloseConfirmOpen)
+                return;
+
+            isCloseConfirmOpen = true;
+
+            try {
+                bool confirmed = await ShowConfirmAsync(
+                    "종료 확인", "종료하시겠습니까?");
+
+                if (confirmed) {
+                    isCloseConfirmed = true;
+                    Close();
+                }
+            }
+            finally {
+                isCloseConfirmOpen = false;
             }
         }
 
@@ -156,20 +167,14 @@ namespace WpfCctvMonitorApp
         //    AppCommon.RoadType = "its";
         //}
 
-        private void CboRegions_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            Debug.WriteLine(CboRegions.SelectedItem);   // SelectedItem과 SelectedValue는 String이 아니면 다르게 나온다?
-            if (CboRegions.SelectedIndex > 0)   // -- 선택 -- 외 선택되었을 때 이벤트 발생
-            {
-                //MessageBox.Show(CboRegions.SelectedValue.ToString());
-                selectedGeoBound = GetRegionBounds(CboRegions.SelectedValue.ToString());
-
-                Debug.WriteLine(selectedGeoBound.MinLat);
-                Debug.WriteLine(selectedGeoBound.MaxLat);
-                Debug.WriteLine(selectedGeoBound.MinLng);
-                Debug.WriteLine(selectedGeoBound.MaxLng);
+        private void CboRegions_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) {
+            
+            if (CboRegions.SelectedIndex <= 0 || CboRegions.SelectedItem is not string regionName) {
+                selectedGeoBound = null;
+                return;
             }
 
+            selectedGeoBound = GetRegionBounds(regionName);
         }
 
         private async void BtnSearch_Click(object sender, RoutedEventArgs e)
@@ -454,18 +459,17 @@ namespace WpfCctvMonitorApp
             }
         }
 
-        private async Task ShowMarkerAsync(CctvResultDto cctv)
-        {
-            double lat = Convert.ToDouble(cctv.CoordY); // 위도
-            double lng = Convert.ToDouble(cctv.CoordX); // 경도
+        private async Task ShowMarkerAsync(CctvResultDto cctv) {
+            string arguments = Newtonsoft.Json.JsonConvert.SerializeObject(
+                new object[]
+                {
+                    cctv.CoordY,
+                    cctv.CoordX,
+                    cctv.CctvName ?? "CCTV"
+                }
+            );
 
-            string name = cctv.CctvName ?? "CCTV";
-
-            string script = $"moveMarker({lat}, {lng}, '{name}');";
-
-            //string script = "alert('TEST')";
-
-            await WvwMap.ExecuteScriptAsync(script);    // HTML 스크립트문을 외부에서 실행
+            await WvwMap.ExecuteScriptAsync($"moveMarker(...{arguments});");
         }
 
         // 스트리밍 재생 메서드
